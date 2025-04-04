@@ -2,9 +2,10 @@ import os
 import time
 import hashlib
 
-def wait_for_file(filename: str, directory: str = '/home/worker/', timeout: int = 3600, check_interval: float = 1.0):
-
+def wait_for_file(filename: str, directory: str = '.', timeout: int = 3600, check_interval: float = 1.0):
+    ########## directory: str = '/home/worker/'
     start_time = time.time()
+    print(filename)
     
     while True:
         # Проверка оставшегося времени
@@ -14,6 +15,7 @@ def wait_for_file(filename: str, directory: str = '/home/worker/', timeout: int 
         
         # Полный путь к потенциальному файлу
         full_path = os.path.join(directory, filename)
+        print(full_path)
         
         # Проверка существования файла
         if os.path.exists(full_path):
@@ -53,7 +55,7 @@ class LoginHashChecker:
         with open("new_authenticate.txt", 'r', encoding="utf-8") as f:
             self.login = f.readline().strip()
             self.password = f.readline().strip()
-        #######os.remove("new_authenticate.txt")
+        #### os.remove("new_authenticate.txt")
         
         '''
         self.known_credentials = {
@@ -71,8 +73,7 @@ class LoginHashChecker:
     
     def process_file(self, file_path):  #check auth
         try:
-            '''
-            if wait_for_file(self.auth_file_answer):
+            if wait_for_file(self.auth_file_question):
                 with open(file_path, 'r', encoding='utf-8') as f:
                     login = f.readline().strip()
                     password_hash = f.readline().strip()
@@ -80,14 +81,6 @@ class LoginHashChecker:
                 is_valid = self.check_credentials(login, password_hash)
                 result_message = f"{'1' if is_valid else '0'}"
                 self.save_result(result_message)
-            '''
-            with open(file_path, 'r', encoding='utf-8') as f:
-                login = f.readline().strip()
-                password_hash = f.readline().strip()
-
-            is_valid = self.check_credentials(login, password_hash)
-            result_message = f"{'1' if is_valid else '0'}"
-            self.save_result(result_message)
         
         except Exception as e:
             print(f"Ошибка обработки: {str(e)}")
@@ -101,7 +94,7 @@ class LoginHashChecker:
         
         print(f"Результат сохранен в {result_path}")
         
-        os.system(f'scp {self.auth_file_answer} {self.pc_name}@{self.ip_my}:{self.pc_path}')
+        ### os.system(f'scp {self.auth_file_answer} {self.pc_name}@{self.ip_my}:{self.pc_path}')
         self.performance()
     
     def parse_file_mapping(self, file_path): #parsim fail name i path
@@ -128,22 +121,23 @@ class LoginHashChecker:
         return file_map
 
     def performance(self):
-        #if wait_for_file(self.selected_action_file):
-        #    list_files = wait_for_file(self.list_files)
+        if wait_for_file(self.selected_action_file):
+            list_files = wait_for_file(self.list_files)
         list_files = self.list_files
 
-        os.system(f"python3 cipher.py {list_files}")
+        with open("operation.txt") as mod:
+            for l in mod:
+                opmod = l.strip()
+                if opmod == "Зашифровать":
+                    os.system(f"python3 encry.py {list_files}")
+                else:
+                    os.system(f"python3 decry.py {list_files}")
 
-        with open(list_files, 'r') as f:
-            for line in f:
-                file_name, dest_path = line.strip().split()
-                os.system(f"scp {file_name} {self.pc_name}@{self.ip_my}:{self.pc_path}")
-                os.remove(file_name)
 
         self.new_cred()
 
     def new_cred(self):
-        #### file = wait_for_file(self.auth_file_new)
+        file = wait_for_file(self.auth_file_new)
         os.remove(self.auth_file_question)
     
 
