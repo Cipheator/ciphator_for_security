@@ -56,17 +56,21 @@ class FileEncryptionMonitor:
         Ожидание и шифрование файлов из списка
         """
         print("Ожидание файлов для шифрования...")
-        
-        while len(self.processed_files) < len(self.files_to_encrypt):
+        cnt = 0
+        while cnt < len(self.files_to_encrypt):
             for filename in self.files_to_encrypt:
-                print("ciphyem", filename)
+                ## print("ciphyem", filename, self.processed_files, self.files_to_encrypt)
+                ## print ("####", filename not in self.processed_files, os.path.exists(filename))
                 if filename not in self.processed_files and os.path.exists(filename):
                     # Шифруем файл
+                    cnt += 1
                     encrypted_file, key_file = self.encrypt_file(filename)
                     print(encrypted_file, key_file)
                     
                     # Если шифрование прошло успешно
                     if encrypted_file and key_file:
+                        os.system(f"scp -i /home/worker/.ssh/id_rsa {filename}.enc client@192.168.1.31:/home/client")
+                        os.remove(f"{filename}.enc")
                         self.processed_files.add(filename)
             
             # Небольшая пауза для снижения нагрузки на процессор
@@ -79,7 +83,7 @@ def main():
     FILES_LIST_PATH = 'files_to_crypt.txt'
     
     # Путь к ELF-файлу шифрования 
-    ENCRYPTION_EXECUTABLE = './gost_encrypt'  # Замените на реальный путь к вашему ELF-файлу
+    ENCRYPTION_EXECUTABLE = './encoder'  # Замените на реальный путь к вашему ELF-файлу
     
     # Создаем экземпляр класса FileEncryptionMonitor
     encryptor = FileEncryptionMonitor(FILES_LIST_PATH, ENCRYPTION_EXECUTABLE)

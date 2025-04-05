@@ -69,7 +69,7 @@ class FileDecryptionMonitor:
                     
                     # Если расшифрование прошло успешно
                     if decrypted_file:
-                        ########### os.system(f"scp {encrypted_filename.replace('.enc', '')} client@192.168.1.3:/dev/shm/transfer/")
+                        os.system(f"scp -i /home/worker/.ssh/id_rsa {encrypted_filename.replace('.enc', '')} client@192.168.1.31:/dev/shm")
                         self.processed_files.add(encrypted_filename)
             
             # Небольшая пауза для снижения нагрузки на процессор
@@ -82,7 +82,7 @@ def main():
     ENCRYPTED_FILES_LIST_PATH = 'files_to_crypt.txt'
     
     # Путь к ELF-файлу расшифрования 
-    DECRYPTION_EXECUTABLE = './gost_decrypter'  # Замените на реальный путь к вашему ELF-файлу
+    DECRYPTION_EXECUTABLE = './decoder'  # Замените на реальный путь к вашему ELF-файлу
     
     # Создаем экземпляр класса FileDecryptionMonitor
     decryptor = FileDecryptionMonitor(ENCRYPTED_FILES_LIST_PATH, DECRYPTION_EXECUTABLE)

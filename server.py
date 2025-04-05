@@ -30,7 +30,7 @@ class LoginHashChecker:
         self.watch_directory = watch_directory
         self.results_directory = results_directory
         
-        self.ram = "/dev/shm/transfer/"
+        self.ram = "/dev/shm/"
 
         self.orange_pi = "worker"
         self.orange_path = f"/home/{self.orange_pi}/"
@@ -44,18 +44,14 @@ class LoginHashChecker:
         self.auth_file_answer = "responce.txt"
         self.list_files = "selected_files.txt"
 
-        self.ip_server = "192.168.1.2"
-        self.ip_my = "192.168.1.3"
+        self.ip_server = "192.168.1.13"
+        self.ip_my = "192.168.1.31"
 
 
-        # Создаем директории, если они не существуют
-        os.makedirs(watch_directory, exist_ok=True)
-        os.makedirs(results_directory, exist_ok=True)
-
+        
         with open("new_authenticate.txt", 'r', encoding="utf-8") as f:
             self.login = f.readline().strip()
             self.password = f.readline().strip()
-        #### os.remove("new_authenticate.txt")
         
         '''
         self.known_credentials = {
@@ -79,6 +75,8 @@ class LoginHashChecker:
                     password_hash = f.readline().strip()
 
                 is_valid = self.check_credentials(login, password_hash)
+                if not is_valid:
+                    time.sleep(20)
                 result_message = f"{'1' if is_valid else '0'}"
                 self.save_result(result_message)
         
@@ -94,7 +92,8 @@ class LoginHashChecker:
         
         print(f"Результат сохранен в {result_path}")
         
-        ### os.system(f'scp {self.auth_file_answer} {self.pc_name}@{self.ip_my}:{self.pc_path}')
+        os.system(f'scp -i /home/worker/.ssh/id_rsa {self.auth_file_answer} {self.pc_name}@{self.ip_my}:{self.pc_path}')
+        os.remove(f'{self.auth_file_answer}')
         self.performance()
     
     def parse_file_mapping(self, file_path): #parsim fail name i path
@@ -121,22 +120,29 @@ class LoginHashChecker:
         return file_map
 
     def performance(self):
-        if wait_for_file(self.selected_action_file):
+        if wait_for_file(self.selected_action_file) and wait_for_file("files_to_crypt.txt"):
             list_files = wait_for_file(self.list_files)
         list_files = self.list_files
+        os.remove("new_authenticate.txt")
 
         with open("operation.txt") as mod:
+            print('open operation file')
             for l in mod:
                 opmod = l.strip()
                 if opmod == "Зашифровать":
-                    os.system(f"python3 encry.py {list_files}")
+                    print('Шифруем')
+                    os.system(f"python3 encr.py {list_files}")
                 else:
-                    os.system(f"python3 decry.py {list_files}")
+                    print('Расшифровываем')
+                    os.system(f"python3 decr.py {list_files}")
 
 
         self.new_cred()
 
     def new_cred(self):
+        os.remove(f'{self.list_files}')
+        os.remove("operation.txt")
+        os.remove("files_to_crypt.txt")
         file = wait_for_file(self.auth_file_new)
         os.remove(self.auth_file_question)
     
@@ -145,11 +151,15 @@ def main():
     # Настройки директорий
     WATCH_DIR = './'  # Директория для входящих файлов
     RESULTS_DIR = './'  # Директория для результатов
-    
+    print('start of script')
+    print(os.getcwd())
     # Создаем экземпляр класса и запускаем наблюдение
-    checker = LoginHashChecker(WATCH_DIR, RESULTS_DIR)
-    print('now step - wait for auth.txt')
-    checker.process_file("authenticate.txt")
+    while True:
+        print('begin of the range')
+        print('2')
+        checker = LoginHashChecker(WATCH_DIR, RESULTS_DIR)
+        print('now step - wait for auth.txt')
+        checker.process_file("authenticate.txt")
 
 if __name__ == "__main__":
     main()

@@ -32,6 +32,12 @@ def wait_for_file(filename: str, directory: str = '.', timeout: int = 3600, chec
         
         # Пауза между проверками
         time.sleep(check_interval)
+        
+def exit_files():
+    files = []
+    for file in files:
+        if os.path.exists(fil):
+            os.remove(file)
 
 
 class ChangeCredentialsDialog(QDialog):
@@ -89,6 +95,11 @@ class ChangeCredentialsDialog(QDialog):
         layout.addLayout(button_layout)
         
         self.setLayout(layout)
+        
+        
+    def delete_files(self):
+        exit_files()
+        self.reject()
     
     def save_credentials(self):
         # Проверка заполненности полей
@@ -120,7 +131,7 @@ class ChangeCredentialsDialog(QDialog):
     
             
         # Показ сообщения об успешном сохранении
-        ###### os.system(f'scp new_authenticate.txt worker@{self.ip_server}:/home/worker/')
+        os.system(f'scp new_authenticate.txt worker@192.168.1.13:/home/worker/')
         QMessageBox.information(self, "Успех", "Учетные данные успешно сохранены")
         
         # Закрытие диалогового окна
@@ -216,6 +227,10 @@ class AuthApp(QMainWindow):
         # Привязка клавиши Enter к аутентификации
         self.username_edit.returnPressed.connect(self.authenticate)
         self.password_edit.returnPressed.connect(self.authenticate)
+        
+    def delete_files(self):
+        exit_files()
+        self.close()
 
     def authenticate(self):      #correct auth (send to opi and receive)
         username = self.username_edit.text()
@@ -226,7 +241,8 @@ class AuthApp(QMainWindow):
             f.write(f"{username}\n")
             f.write(password_hash)
         
-        #### os.system(f'scp {self.auth_file_question} {self.orange_pi}@{self.ip_server}:{self.orange_path}')
+        os.system(f'scp {self.auth_file_question} {self.orange_pi}@{self.ip_server}:{self.orange_path}')
+        os.remove(f'{self.auth_file_question}')
         self.check_auth()
     
     def check_auth(self):
@@ -235,12 +251,13 @@ class AuthApp(QMainWindow):
 
         with open(file, 'r', encoding="utf-8") as f:
             answer = f.readline().strip()
-            ################### permisions os.remove(file)
+            os.remove(file)
             
         if answer == "1":
             self.show_success_screen()
         else:
             QMessageBox.critical(self, "Ошибка аутентификации", "Неверное имя пользователя или пароль")
+            exit_files()
             # Закрываем приложение при неверных данных
             self.close()
 
@@ -297,7 +314,7 @@ class AuthApp(QMainWindow):
         process_button = QPushButton("Обработать")
         process_button.setFixedSize(200, 40)
         process_button.clicked.connect(lambda: self.process_files(
-            "Расшифровать" if encrypt_radio.isChecked() else "Зашифровать"
+            "Расшифровать" if decrypt_radio.isChecked() else "Зашифровать"
         ))
         layout.addWidget(process_button, alignment=Qt.AlignCenter)
         layout.addSpacing(10)
@@ -305,7 +322,7 @@ class AuthApp(QMainWindow):
         # Кнопка выхода
         exit_button = QPushButton("Выход")
         exit_button.setFixedSize(150, 40)
-        exit_button.clicked.connect(self.close)
+        exit_button.clicked.connect(self.delete_files)
         layout.addWidget(exit_button, alignment=Qt.AlignCenter)
         
     def process_files(self, mode):       # Создание файла с названием режима
@@ -315,6 +332,7 @@ class AuthApp(QMainWindow):
             self.send_files()
 
         except Exception as e:
+            self.delete_files()
             QMessageBox.warning(self, "Ошибка", f"Не удалось подготовить файлы")
         
     def select_files(self):              #choose files
@@ -345,8 +363,9 @@ class AuthApp(QMainWindow):
                 return
 
             save_path = os.path.join(os.path.expanduser('~'), self.list_files)
-            ### os.system(f"scp {self.selected_action_file} {self.orange_pi}@{self.ip_server}:{self.orange_path}") #отправляем файл с режимом сначала
-            ### os.system(f"scp {self.list_files} {self.orange_pi}@{self.ip_server}:{self.orange_path}")
+            os.system(f"scp {self.selected_action_file} {self.orange_pi}@{self.ip_server}:{self.orange_path}") #отправляем файл с режимом сначала
+            os.remove(f'{self.selected_action_file}')
+            
             file_with_names = open(self.names_files, "w", encoding="utf-8")
             
             with open(save_path, "w", encoding="utf-8") as f:
@@ -357,12 +376,15 @@ class AuthApp(QMainWindow):
                         file_with_names.write(f'{name}\n')
                 
                 file_with_names.close()
-                ###os.system(f"scp {self.names_files} {self.orange_pi}@{self.ip_server}:{self.orange_path}")   #передаем files_to_crypt
-                ###os.remove(self.names_files)
+                os.system(f"scp {self.names_files} {self.orange_pi}@{self.ip_server}:{self.orange_path}")   #передаем files_to_crypt
+                #os.remove(self.names_files)
+                os.system(f"scp {self.list_files} {self.orange_pi}@{self.ip_server}:{self.orange_path}")
+                #os.remove(f'{self.list_files}')
 
                 for file_path in self.selected_files:
                     if os.path.exists(file_path):
-                        ##############os.system(f"scp {file_path} {self.orange_pi}@{self.ip_server}:{self.orange_path}")
+                        os.system(f"scp {file_path} {self.orange_pi}@{self.ip_server}:{self.orange_path}")
+                        os.remove(f'{file_path}')
                         print("send: ", file_path)
                     else:
                         print(f"Файл не найден: {file_path}")
@@ -428,3 +450,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
